@@ -1,0 +1,3 @@
+/home/yellow/Desktop/MIRI/2/srgge/build/CMakeFiles/rebuild_cache.dir
+/home/yellow/Desktop/MIRI/2/srgge/build/CMakeFiles/BaseCode.dir
+/home/yellow/Desktop/MIRI/2/srgge/build/CMakeFiles/edit_cache.dir

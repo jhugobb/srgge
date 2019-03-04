@@ -3,6 +3,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <GL/glew.h>
+#include <GL/glut.h>
 #include "Scene.h"
 #include "PLYReader.h"
 

@@ -1,5 +1,8 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
 #include "Application.h"
 
 
@@ -10,7 +13,15 @@
 #define TIME_PER_FRAME 1000.f / 60.f // Approx. 60 fps
 
 
+void renderBitmapString(void *font, char *string) {  
+	char *c;
+	for (c=string; *c != '\0'; c++) {
+		glutBitmapCharacter(font, *c);
+	}
+}
+
 static int prevTime;
+static double framerate = 0;
 static Application app; // This object represents our whole app
 
 
@@ -84,6 +95,12 @@ static void resizeCallback(int width, int height)
 static void drawCallback()
 {
 	Application::instance().render();
+	glPushMatrix();
+	glLoadIdentity();
+	//glRasterPos2f(-20,0);
+	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_10, (to_string(framerate)).c_str()[0]);
+	glutSetWindowTitle((to_string(framerate) + " fps").c_str());
+	glPopMatrix();
 	glutSwapBuffers();
 }
 
@@ -91,7 +108,7 @@ static void idleCallback()
 {
 	int currentTime = glutGet(GLUT_ELAPSED_TIME);
 	int deltaTime = currentTime - prevTime;
-	
+	framerate = 1.0f/deltaTime * 1000;
 	if(deltaTime > TIME_PER_FRAME)
 	{
 		// Every time we enter here is equivalent to a game loop execution
@@ -101,6 +118,8 @@ static void idleCallback()
 		glutPostRedisplay();
 	}
 }
+
+
 
 
 int main(int argc, char **argv)
