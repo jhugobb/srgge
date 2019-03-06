@@ -1,1 +1,6 @@
+# cmake build files
 build/
+
+# PLY models
+*.ply
+

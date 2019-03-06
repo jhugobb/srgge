@@ -95,12 +95,7 @@ static void resizeCallback(int width, int height)
 static void drawCallback()
 {
 	Application::instance().render();
-	glPushMatrix();
-	glLoadIdentity();
-	//glRasterPos2f(-20,0);
-	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_10, (to_string(framerate)).c_str()[0]);
 	glutSetWindowTitle((to_string(framerate) + " fps").c_str());
-	glPopMatrix();
 	glutSwapBuffers();
 }
 
