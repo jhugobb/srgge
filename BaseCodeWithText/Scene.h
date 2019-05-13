@@ -6,11 +6,16 @@
 #include "Camera.h"
 #include "ShaderProgram.h"
 #include "TriangleMesh.h"
+#include "Text.h"
+#include "Map.h"
+
+#include <map>
+#include <fstream>
+#include <string>
 
 
 // Scene contains all the entities of our game.
 // It is responsible for updating and render them.
-
 
 class Scene
 {
@@ -34,11 +39,14 @@ private:
 
 private:
   Camera camera;
-	TriangleMesh *mesh;
+	std::map<char, TriangleMesh*> meshes;
+	Map *map;
 	ShaderProgram basicProgram;
 	float currentTime;
 	
 	bool bPolygonFill;
+	
+	Text text;
 
 };
 

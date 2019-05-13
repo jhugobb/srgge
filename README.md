@@ -1,2 +1,0 @@
-# srgge
-Srgge lab project
