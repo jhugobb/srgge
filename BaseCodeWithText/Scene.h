@@ -26,7 +26,7 @@ public:
 
 	void init();
 	bool loadMesh(const char *filename);
-	void update(int deltaTime);
+	void update(int deltaTime, bool, bool, bool, bool);
 	void render();
 
   Camera &getCamera();
@@ -41,6 +41,7 @@ private:
   Camera camera;
 	std::map<char, TriangleMesh*> meshes;
 	Map *map;
+	float framerate;
 	ShaderProgram basicProgram;
 	float currentTime;
 	

@@ -3,6 +3,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include "Scene.h"
 #include "PLYReader.h"
 
@@ -87,9 +88,28 @@ bool Scene::loadMesh(const char *filename)
 	return false;
 }
 
-void Scene::update(int deltaTime)
+void Scene::update(int deltaTime, bool forward, bool back, bool left, bool right) 
 {
 	currentTime += deltaTime;
+	glm::mat4 m;
+	m = camera.getModelViewMatrix();
+	framerate = 1.0f/deltaTime * 1000;
+	glm::vec3 mov(0);
+	float rate = float(1.0f/deltaTime);
+	if (forward){
+		mov.z += rate;
+	} 
+	if (back){
+		mov.z -= rate;
+	}
+	if (left){
+		mov.x += rate;
+	} 
+	if (right){
+		mov.x -= rate;
+	} 
+
+	camera.move(mov);
 }
 
 void Scene::render()
@@ -120,8 +140,8 @@ void Scene::render()
 			for (int j = 0; j<s; j++) {
 				TriangleMesh* m = meshes[map->layout[i][j]];
 				if(m) {
-					glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, 0));
-					glm::mat4 mat = MV * matrix;
+					glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
+					glm::mat4 mat = MV* matrix;
 					basicProgram.setUniformMatrix4f("modelview", mat);
 					m->render();
 				}
@@ -137,15 +157,15 @@ void Scene::render()
 		for (int j = 0; j<s; j++) {
 			TriangleMesh* m = meshes[map->layout[i][j]];
 			if(m) {
-				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, j, 0));
-				glm::mat4 mat = matrix * MV;
+				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
+				glm::mat4 mat = MV * matrix;
 				basicProgram.setUniformMatrix4f("modelview", mat);
 				m->render();
 			}
 			
 		}
 	}
-	text.render("Mesh renderer", glm::vec2(20, 20), 16, glm::vec4(0, 0, 0, 1));
+	text.render(std::to_string(framerate), glm::vec2(20, 20), 16, glm::vec4(0, 0, 0, 1));
 }
 
 Camera &Scene::getCamera()

@@ -28,7 +28,7 @@ bool Application::loadMesh(const char *filename)
 
 bool Application::update(int deltaTime)
 {
-	scene.update(deltaTime);
+	scene.update(deltaTime, keys[119], keys[115], keys[97], keys[100]);
 	
 	return bPlay;
 }

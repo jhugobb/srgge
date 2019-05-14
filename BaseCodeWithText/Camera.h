@@ -24,11 +24,13 @@ public:
 
 	glm::mat4 &getProjectionMatrix();
 	glm::mat4 &getModelViewMatrix();
+	void move(glm::vec3);
 
 private:
   void computeModelViewMatrix();
 
 private:
+	glm::vec3 position;
 	float angleX, angleY, distance;   // Camera parameters
 	float rangeDistanceCamera[2];
 	glm::mat4 projection, modelview;  // OpenGL matrices
