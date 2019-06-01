@@ -104,7 +104,9 @@ bool Application::getSpecialKey(int key) const
 	return specialKeys[key];
 }
 
-
+void Application::cleanUpScene() {
+	scene.cleanup();
+}
 
 
 

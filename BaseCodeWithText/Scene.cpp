@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_access.hpp>
 #include "Scene.h"
 #include "PLYReader.h"
+#include "LOD.h"
 
 Scene::Scene()
 {
@@ -33,6 +34,9 @@ void parse(Map* map, string filename) {
         case 'f':
           map->addFloor(i,j);
           break;
+				case 'b':
+					map->addBunny(i,j);
+					break;
         // TODO: add more cases;
         default:
           break;
@@ -46,18 +50,34 @@ void parse(Map* map, string filename) {
 void Scene::init()
 {
 	initShaders();
-	parse(map, "../1.map");
+	parse(map, "../2.map");
 	
 	for (char c : map->getTypesOfMesh()) {
 		TriangleMesh* mesh = new TriangleMesh();
 		std::cout << "bah" << std::endl;
+		bool success;
+		LOD lod;
+		PLYReader reader;
 		switch (c) {
 			case 'w':
 				mesh->buildCube();
 				mesh->sendToOpenGL(basicProgram);
 				meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
 				break;
-			
+			case 'f':
+				mesh->buildFloor();
+				mesh->sendToOpenGL(basicProgram);
+				meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
+				break;
+			case 'b':
+				success = reader.readMesh("../models/Armadillo.ply", *mesh);
+				lod = LOD(mesh);
+				assert(lod.simp_vertices.size() != 0);
+				mesh->setLOD(lod);
+				mesh->setLODlevel(1);
+				if (success) mesh->sendToOpenGL(basicProgram);
+				meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
+				break;
 			default:
 				break;
 		}
@@ -206,4 +226,16 @@ void Scene::initShaders()
 	basicProgram.bindFragmentOutput("outColor");
 	vShader.free();
 	fShader.free();
+}
+
+void Scene::cleanup() {
+	int size = map->layout.size();
+	for (int i = 0; i<size; i++) {
+		int s = map->layout[i].size();
+		for (int j = 0; j<s; j++) {
+			TriangleMesh* m = meshes[map->layout[i][j]];
+			if(m)
+				m->free();
+		}
+	}
 }

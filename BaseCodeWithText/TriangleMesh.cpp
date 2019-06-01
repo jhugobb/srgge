@@ -25,14 +25,14 @@ void TriangleMesh::addTriangle(int v0, int v1, int v2)
 
 void TriangleMesh::buildCube()
 {
-	float vertices[] = {-1, -1, -1,
-                      1, -1, -1,
-                      1,  1, -1,
-                      -1,  1, -1,
-                      -1, -1,  1,
-                      1, -1,  1,
-                      1,  1,  1,
-                      -1,  1,  1
+	float vertices[] = {-1, -1, -1, // 0
+                      1, -1, -1,  // 1
+                      1,  1, -1,  // 2
+                      -1,  1, -1, // 3
+                      -1, -1,  1, // 4
+                      1, -1,  1,  // 5
+                      1,  1,  1,  // 6
+                      -1,  1,  1  // 7
 								};
 
 	int faces[] = {3, 1, 0, 3, 2, 1,
@@ -51,10 +51,37 @@ void TriangleMesh::buildCube()
 		addTriangle(faces[3*i], faces[3*i+1], faces[3*i+2]);
 }
 
+void TriangleMesh::buildFloor() {
+	float vertices[] = {-1, -1, -1,
+											1, -1, -1,
+											-1, -1, 1,
+											1, -1, 1};
+
+	int faces[] = {1, 0, 2, 2, 3, 1};
+	int i;
+	for(i=0; i<4; i+=1)
+		addVertex(0.5f * glm::vec3(vertices[3*i], vertices[3*i+1], vertices[3*i+2]));
+	for(i=0; i<2; i++)
+		addTriangle(faces[3*i], faces[3*i+1], faces[3*i+2]);
+}
+
+void TriangleMesh::setLOD(LOD l) {
+	triangles.clear();
+	vertices.clear();
+	lod = l;
+}
+
+void TriangleMesh::setLODlevel(int level) {
+	LOD_level = level;
+}
+
 void TriangleMesh::sendToOpenGL(ShaderProgram &program)
 {
+	if (&vbo != NULL) glDeleteBuffers(1, &vbo);
+	if (&vao != NULL) glDeleteVertexArrays(1, &vao);
 	vector<float> data;
-	
+	vertices = (lod.simp_vertices)[LOD_level];
+	triangles = (lod.simp_tris)[LOD_level];
 	for(unsigned int tri=0; tri<triangles.size(); tri+=3)
 	{
 	  glm::vec3 normal;
@@ -82,6 +109,9 @@ void TriangleMesh::sendToOpenGL(ShaderProgram &program)
 	glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
 	posLocation = program.bindVertexAttribute("position", 3, 6*sizeof(float), 0);
 	normalLocation = program.bindVertexAttribute("normal", 3, 6*sizeof(float), (void *)(3*sizeof(float)));
+
+	// vertices.clear();
+	// triangles.clear();
 }
 
 void TriangleMesh::render() const
@@ -101,5 +131,11 @@ void TriangleMesh::free()
 	triangles.clear();
 }
 
+vector<glm::vec3> TriangleMesh::getVertices() {
+	return vertices;
+}
 
+vector<int> TriangleMesh::getTriangles() {
+	return triangles;
+}
 

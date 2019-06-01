@@ -21,3 +21,8 @@ void Map::addFloor(int i, int j) {
   layout[i][j] = 'f';
   types.insert('f');
 }
+
+void Map::addBunny(int i, int j) {
+  layout[i][j] = 'b';
+  types.insert('b');
+}

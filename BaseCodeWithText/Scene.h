@@ -29,6 +29,8 @@ public:
 	void update(int deltaTime, bool, bool, bool, bool);
 	void render();
 
+	void cleanup();
+
   Camera &getCamera();
   
   void switchPolygonMode();

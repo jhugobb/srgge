@@ -10,6 +10,7 @@ class Map {
     Map();
     void addWall(int, int);
     void addFloor(int, int);
+    void addBunny(int, int);
     void addRow(int);
     void addBlank(int, int);
     std::set<char> getTypesOfMesh();

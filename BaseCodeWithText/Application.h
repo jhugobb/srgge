@@ -25,6 +25,7 @@ public:
 	void init();
 	bool loadMesh(const char *filename);
 	bool update(int deltaTime);
+	void cleanUpScene();
 	void render();
 	
 	void resize(int width, int height);
@@ -37,6 +38,7 @@ public:
 	void mouseMove(int x, int y);
 	void mousePress(int button);
 	void mouseRelease(int button);
+	
 	
 	bool getKey(int key) const;
 	bool getSpecialKey(int key) const;
