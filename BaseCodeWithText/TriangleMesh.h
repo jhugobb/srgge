@@ -26,7 +26,7 @@ public:
 	vector<int> getTriangles();
 	void setLOD(LOD);
 	void setLODlevel(int);
-	void sendToOpenGL(ShaderProgram &program);
+	void sendToOpenGL(ShaderProgram &program, bool is_mesh);
 	void render() const;
 	void free();
 

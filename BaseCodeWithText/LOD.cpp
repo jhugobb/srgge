@@ -128,10 +128,11 @@ LOD::LOD(TriangleMesh* tm) {
   /* OCTREE DECIDER
    * ------------------------------------------------------------------------------
    * */
+  Octree octree;
   if (useOctree) {
     glm::vec3 origin(min_x, min_y, min_z);
     //glm::vec3 origin(-1, -1, -1);
-    Octree octree = Octree(origin, max_x-min_x, max_y-min_y, max_z-min_z);
+    octree = Octree(origin, max_x-min_x, max_y-min_y, max_z-min_z);
     for (unsigned int i = 0; i < verts.size(); i++) {
       octree.insert(verts[i], i);
     }
@@ -313,4 +314,5 @@ LOD::LOD(TriangleMesh* tm) {
     free(tri_structs[i]);
   }
   neighbors.clear();
+  octree.free();
 }

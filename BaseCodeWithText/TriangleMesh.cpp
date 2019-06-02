@@ -27,12 +27,12 @@ void TriangleMesh::buildCube()
 {
 	float vertices[] = {-1, -1, -1, // 0
                       1, -1, -1,  // 1
-                      1,  1, -1,  // 2
-                      -1,  1, -1, // 3
+                      1,  3, -1,  // 2
+                      -1,  3, -1, // 3
                       -1, -1,  1, // 4
                       1, -1,  1,  // 5
-                      1,  1,  1,  // 6
-                      -1,  1,  1  // 7
+                      1,  3,  1,  // 6
+                      -1,  3,  1  // 7
 								};
 
 	int faces[] = {3, 1, 0, 3, 2, 1,
@@ -75,13 +75,18 @@ void TriangleMesh::setLODlevel(int level) {
 	LOD_level = level;
 }
 
-void TriangleMesh::sendToOpenGL(ShaderProgram &program)
+void TriangleMesh::sendToOpenGL(ShaderProgram &program, bool is_mesh)
 {
 	if (&vbo != NULL) glDeleteBuffers(1, &vbo);
 	if (&vao != NULL) glDeleteVertexArrays(1, &vao);
+	if (is_mesh) {
+		vertices.clear();
+		triangles.clear();
+		vertices = (lod.simp_vertices)[LOD_level];
+		triangles = (lod.simp_tris)[LOD_level];
+	}
 	vector<float> data;
-	vertices = (lod.simp_vertices)[LOD_level];
-	triangles = (lod.simp_tris)[LOD_level];
+
 	for(unsigned int tri=0; tri<triangles.size(); tri+=3)
 	{
 	  glm::vec3 normal;

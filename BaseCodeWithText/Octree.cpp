@@ -3,6 +3,8 @@
 
 using namespace std;
 
+Octree::Octree() {}
+
 Octree::Octree(glm::vec3 origin, double length_x, double length_y, double length_z) {
   root_length_x = length_x;
   root_length_y = length_y;
@@ -109,6 +111,7 @@ vector<Cluster*> clust(node* root, int level) {
         c->verts = vector<Vertex>();
         bool succ = getClust(child, c);
         if (succ) cs.push_back(c);
+        else free(c);
       }
     }
     return cs;
@@ -148,4 +151,21 @@ int count(node* root, int level) {
 
 int Octree::nNodesAtLevel(int level) {
   return count(root, level);
+}
+
+void free_oct(node* root) {
+  if (root == NULL) return;
+  if (root->is_leaf) {
+    root->verts.clear();
+    free(root);
+  } else {
+    for (node* child : root->children) {
+      free_oct(child);
+    }
+    free(root);
+  }
+}
+
+void Octree::free() {
+  free_oct(root);
 }

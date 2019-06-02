@@ -29,11 +29,13 @@ struct Cluster {
 
 class Octree {
   public:
+    Octree();
     Octree(glm::vec3, double, double, double);
     void insert(glm::vec3, int);
     vector<Cluster*> cluster(int);
     int nNodesAtLevel(int);
     int depth;
+    void free();
   private:
     node* root;
     double root_length_x;

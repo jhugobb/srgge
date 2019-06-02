@@ -31,13 +31,33 @@ void parse(Map* map, string filename) {
         case 'w':
           map->addWall(i,j);
           break;
-        case 'f':
+        case ' ':
           map->addFloor(i,j);
           break;
 				case 'b':
 					map->addBunny(i,j);
 					break;
-        // TODO: add more cases;
+				case 'a':
+					map->addArmadillo(i,j);
+					break;
+				case 'm':
+					map->addMax(i,j);
+					break;
+				case 'o':
+					map->addMoai(i,j);
+					break;
+				case 'h':
+					map->addHorse(i,j);
+					break;
+				case 'l':
+					map->addLucy(i,j);
+					break;
+				case 'r':
+					map->addFrog(i,j);
+					break;
+				case 'd':
+					map->addDragon(i,j);
+					break;
         default:
           break;
       }
@@ -50,36 +70,83 @@ void parse(Map* map, string filename) {
 void Scene::init()
 {
 	initShaders();
-	parse(map, "../2.map");
+	parse(map, "../maps/3.map");
+	vector<char> possibilities = {'a', 'b', 'd', 'f', 'h', 'l',
+																'w', 'm', 'o', 'r'};
+	std::map<char, bool> is_comp;
+	for (char c : possibilities) is_comp[c] = false;
+
+	bool is_mesh;
+	std::string mesh_location;
 	
 	for (char c : map->getTypesOfMesh()) {
 		TriangleMesh* mesh = new TriangleMesh();
-		std::cout << "bah" << std::endl;
 		bool success;
 		LOD lod;
 		PLYReader reader;
+		if (is_comp[c]) {
+			free(mesh);
+			continue;
+		}
+		is_mesh = false;
 		switch (c) {
 			case 'w':
 				mesh->buildCube();
-				mesh->sendToOpenGL(basicProgram);
+				mesh->sendToOpenGL(basicProgram, is_mesh);
 				meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
+				is_comp['w'] = true;
 				break;
-			case 'f':
+			case ' ':
 				mesh->buildFloor();
-				mesh->sendToOpenGL(basicProgram);
+				mesh->sendToOpenGL(basicProgram, is_mesh);
 				meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
+				is_comp[' '] = true;
 				break;
 			case 'b':
-				success = reader.readMesh("../models/Armadillo.ply", *mesh);
-				lod = LOD(mesh);
-				assert(lod.simp_vertices.size() != 0);
-				mesh->setLOD(lod);
-				mesh->setLODlevel(1);
-				if (success) mesh->sendToOpenGL(basicProgram);
-				meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
+				mesh_location = "../models/bunny.ply";
+				is_mesh = true;
 				break;
+			case 'a':
+				mesh_location = "../models/Armadillo.ply";
+				is_mesh = true;
+				break;
+			case 'l':
+				mesh_location = "../models/lucy.ply";
+				is_mesh = true;
+				break;
+			case 'r':
+				mesh_location = "../models/frog.ply";
+				is_mesh = true;
+				break;
+			case 'h':
+				mesh_location = "../models/horse.ply";
+				is_mesh = true;
+				break;
+			case 'd':
+				mesh_location = "../models/dragon.ply";
+				is_mesh = true;
+				break;
+			case 'm':
+				mesh_location = "../models/maxplanck.ply";
+				is_mesh = true;
+				break;
+			case 'o':
+				mesh_location = "../models/moai.ply";
+				is_mesh = true;
+				break;	
 			default:
 				break;
+		}
+		if (is_mesh) {
+			success = reader.readMesh(mesh_location, *mesh);
+			if (!success) continue;
+			lod = LOD(mesh);
+			assert(lod.simp_vertices.size() != 0);
+			mesh->setLOD(lod);
+			mesh->setLODlevel(1);
+			mesh->sendToOpenGL(basicProgram, is_mesh);
+			meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
+			is_comp[c] = true;
 		}
 	}
 	currentTime = 0.0f;
@@ -115,18 +182,20 @@ void Scene::update(int deltaTime, bool forward, bool back, bool left, bool right
 	m = camera.getModelViewMatrix();
 	framerate = 1.0f/deltaTime * 1000;
 	glm::vec3 mov(0);
+	glm::vec3 forw = glm::normalize(glm::vec3(m[0][2], 0, m[2][2]));
+	glm::vec3 side = glm::normalize(glm::cross(forw, glm::vec3(0,1,0)));
 	float rate = float(1.0f/deltaTime);
 	if (forward){
-		mov.z += rate;
+		mov += rate * forw;
 	} 
 	if (back){
-		mov.z -= rate;
+		mov -= rate * forw;
 	}
 	if (left){
-		mov.x += rate;
+		mov -= rate * side;
 	} 
 	if (right){
-		mov.x -= rate;
+		mov += rate * side;
 	} 
 
 	camera.move(mov);
@@ -165,6 +234,10 @@ void Scene::render()
 					basicProgram.setUniformMatrix4f("modelview", mat);
 					m->render();
 				}
+				if (map->layout[i][j] != ' ' && map->layout[i][j] != 'w') {
+					TriangleMesh * floor = meshes[' '];
+					floor->render();
+				}
 			}
 		}
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -182,7 +255,10 @@ void Scene::render()
 				basicProgram.setUniformMatrix4f("modelview", mat);
 				m->render();
 			}
-			
+			if (map->layout[i][j] != ' ' && map->layout[i][j] != 'w') {
+					TriangleMesh * floor = meshes[' '];
+					floor->render();
+				}
 		}
 	}
 	text.render(std::to_string(framerate), glm::vec2(20, 20), 16, glm::vec4(0, 0, 0, 1));

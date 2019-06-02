@@ -3,7 +3,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
-
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/rotate_vector.hpp>
 #define PI 3.14159f
 
 
@@ -18,7 +19,7 @@ Camera::~Camera()
 
 void Camera::init(float initDistance, float initAngleX, float initAngleY)
 {
-  position = glm::vec3(0);
+  position = glm::vec3(0, -1, 0);
   distance = initDistance;
   angleX = initAngleX;
   angleY = initAngleY;
@@ -50,9 +51,12 @@ void Camera::zoomCamera(float distDelta)
 void Camera::computeModelViewMatrix()
 {
 	modelview = glm::mat4(1.0f);
-	modelview = glm::translate(modelview, position + glm::vec3(0.0f, 0.0f, -distance));
+	// modelview = glm::rotate(modelview, angleX / 180.f * PI, glm::vec3(modelview[0]));
 	modelview = glm::rotate(modelview, angleX / 180.f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+	// modelview = glm::rotate(modelview, angleY / 180.f * PI, glm::vec3(modelview[1]));
 	modelview = glm::rotate(modelview, angleY / 180.f * PI, glm::vec3(0.0f, 1.0f, 0.0f));
+	// modelview = glm::translate(modelview, glm::vec3(0.0f, 0.0f, -distance));
+  modelview = glm::translate(modelview, position);
 }
 
 glm::mat4 &Camera::getProjectionMatrix()
