@@ -20,12 +20,8 @@ class Map {
     void addMoai(int,int);
     void addRow(int);
     void addBlank(int, int);
-    void addPlayer(int, int);
     std::set<char> getTypesOfMesh();
     std::vector<std::vector<char>> layout;
-
-    int player_i;
-    int player_j;
 
   private:
     std::set<char> types;

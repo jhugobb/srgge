@@ -12,7 +12,7 @@
 #include <map>
 #include <fstream>
 #include <string>
-
+#include <unordered_set>
 
 // Scene contains all the entities of our game.
 // It is responsible for updating and render them.
@@ -38,10 +38,12 @@ public:
 private:
 	void initShaders();
 	void computeModelViewMatrix();
+	void parseVisibility(std::string);
 
 private:
   Camera camera;
 	std::map<char, TriangleMesh*> meshes;
+	std::map<int, unordered_set<int>> PVSs;
 	Map *map;
 	float framerate;
 	ShaderProgram basicProgram;

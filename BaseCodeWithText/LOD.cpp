@@ -1,6 +1,7 @@
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <limits>
+#include <ctime>
 #include <queue>
 #include "TriangleMesh.h"
 #include "LOD.h"
@@ -133,16 +134,19 @@ LOD::LOD(TriangleMesh* tm) {
     glm::vec3 origin(min_x, min_y, min_z);
     //glm::vec3 origin(-1, -1, -1);
     octree = Octree(origin, max_x-min_x, max_y-min_y, max_z-min_z);
+    clock_t begin = std::clock();
     for (unsigned int i = 0; i < verts.size(); i++) {
       octree.insert(verts[i], i);
     }
-
+    clock_t end = std::clock();
+    cout << "insertion" << endl;
+    cout << double(end-begin) / CLOCKS_PER_SEC << endl;
     //int result = octree.nNodesAtLevel(6);
     // Cluster level 4 is low bound
     // Cluster level 5 seems good mid 
     for (unsigned int i = 4; i < 9; i+=2) {
+      begin = clock();
       vector<Cluster*> clusters = octree.cluster(i);
-      cout << float(clusters.size()) / float(verts.size()) * 100 << "% of original" << endl;
       map<int, Cluster*> representatives;
       int count = 0;
       for (Cluster* c : clusters) {
@@ -207,6 +211,7 @@ LOD::LOD(TriangleMesh* tm) {
       }
       clusters.clear();
       representatives.clear();
+      
       cout << "Final vert count " << simp_v.size() << endl;
       cout << "Final tri count " << simp_t.size()/3 << endl;
     }

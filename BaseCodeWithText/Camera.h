@@ -24,6 +24,8 @@ public:
 
 	glm::mat4 &getProjectionMatrix();
 	glm::mat4 &getModelViewMatrix();
+	glm::vec3 &getPosition();
+	void setPlayer(int, int);
 	void move(glm::vec3);
 
 private:

@@ -18,6 +18,35 @@ Scene::~Scene()
 	meshes.clear();
 }
 
+std::vector<std::string> split(const std::string & str, const std::string & delim) {
+    std::vector<std::string> tokens;
+    int prev = 0, pos = 0;
+    do {
+        pos = str.find(delim, prev);
+        if (pos == std::string::npos) pos = str.length();
+        std::string token = str.substr(prev, pos - prev);
+        if (!token.empty()) tokens.push_back(token);
+        prev = pos + delim.length();
+    } while (pos < str.length() && prev < str.length());
+    return tokens;
+}
+
+void Scene::parseVisibility(string filename) {
+	std::ifstream file(filename, ios::in);
+  std::string line; 
+  unsigned int size;
+  unsigned int i = 0;
+  while (std::getline(file, line)) {
+		std::vector<std::string> vals = split(line, " ");
+		std::unordered_set<int> PVS;
+		for (std::string idx_s : vals) {
+			PVS.emplace(std::stoi(idx_s));
+		}
+		PVSs[i] = PVS;
+		i++;
+	}
+}
+
 void parse(Map* map, string filename) {
   std::ifstream file(filename, ios::in);
   std::string line; 
@@ -58,6 +87,8 @@ void parse(Map* map, string filename) {
 				case 'd':
 					map->addDragon(i,j);
 					break;
+				case 'p':
+					map->addPlayer(i,j);
         default:
           break;
       }
@@ -71,6 +102,7 @@ void Scene::init()
 {
 	initShaders();
 	parse(map, "../maps/3.map");
+	parseVisibility("../visibility/results/3.vis");
 	vector<char> possibilities = {'a', 'b', 'd', 'f', 'h', 'l',
 																'w', 'm', 'o', 'r'};
 	std::map<char, bool> is_comp;
@@ -152,6 +184,7 @@ void Scene::init()
 	currentTime = 0.0f;
 	
 	camera.init(2.0f);
+	camera.setPlayer(-map->player_i, -map->player_j);
 	
 	bPolygonFill = true;
 	
@@ -178,9 +211,10 @@ bool Scene::loadMesh(const char *filename)
 void Scene::update(int deltaTime, bool forward, bool back, bool left, bool right) 
 {
 	currentTime += deltaTime;
+	framerate = 1.0f/deltaTime * 1000;
+	
 	glm::mat4 m;
 	m = camera.getModelViewMatrix();
-	framerate = 1.0f/deltaTime * 1000;
 	glm::vec3 mov(0);
 	glm::vec3 forw = glm::normalize(glm::vec3(m[0][2], 0, m[2][2]));
 	glm::vec3 side = glm::normalize(glm::cross(forw, glm::vec3(0,1,0)));
@@ -197,7 +231,6 @@ void Scene::update(int deltaTime, bool forward, bool back, bool left, bool right
 	if (right){
 		mov += rate * side;
 	} 
-
 	camera.move(mov);
 }
 
@@ -210,7 +243,9 @@ void Scene::render()
 	basicProgram.setUniformMatrix4f("projection", camera.getProjectionMatrix());
 	normalMatrix = glm::inverseTranspose(camera.getModelViewMatrix());
 	basicProgram.setUniformMatrix3f("normalMatrix", normalMatrix);
-	
+	glm::vec3 player_pos = camera.getPosition();
+	int player_i = -floor(player_pos[0]);
+	int player_j = -floor(player_pos[2]);
 	basicProgram.setUniform1i("bLighting", bPolygonFill?1:0);
 	if(bPolygonFill)
 	{
@@ -228,7 +263,10 @@ void Scene::render()
 			int s = map->layout[i].size();
 			for (int j = 0; j<s; j++) {
 				TriangleMesh* m = meshes[map->layout[i][j]];
+				if (PVSs[player_i*s + player_j].find(i*s + j-1) == PVSs[player_i*s + player_j].end()) continue;
 				if(m) {
+					if (map->layout[i][j] == ' ') basicProgram.setUniform1i("is_floor", 1);
+					else basicProgram.setUniform1i("is_floor", 0);
 					glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
 					glm::mat4 mat = MV* matrix;
 					basicProgram.setUniformMatrix4f("modelview", mat);
@@ -236,6 +274,7 @@ void Scene::render()
 				}
 				if (map->layout[i][j] != ' ' && map->layout[i][j] != 'w') {
 					TriangleMesh * floor = meshes[' '];
+					basicProgram.setUniform1i("is_floor", 1);
 					floor->render();
 				}
 			}
@@ -249,6 +288,7 @@ void Scene::render()
 		int s = map->layout[i].size();
 		for (int j = 0; j<s; j++) {
 			TriangleMesh* m = meshes[map->layout[i][j]];
+			if (PVSs[player_i*s + player_j].find(i*s + j-1) == PVSs[player_i*s + player_j].end()) continue;
 			if(m) {
 				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
 				glm::mat4 mat = MV * matrix;
@@ -258,7 +298,10 @@ void Scene::render()
 			if (map->layout[i][j] != ' ' && map->layout[i][j] != 'w') {
 					TriangleMesh * floor = meshes[' '];
 					floor->render();
-				}
+			}
+			if (PVSs[player_i*s + player_j].find(i*s + j-1) != PVSs[player_i*s + player_j].end()){
+				basicProgram.setUniform1i("visible", 1);
+			} else basicProgram.setUniform1i("visible", 0);
 		}
 	}
 	text.render(std::to_string(framerate), glm::vec2(20, 20), 16, glm::vec4(0, 0, 0, 1));

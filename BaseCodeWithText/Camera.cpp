@@ -73,3 +73,11 @@ void Camera::move(glm::vec3 mov) {
   position += mov;
   computeModelViewMatrix();
 }
+
+glm::vec3 &Camera::getPosition() {
+  return position;
+}
+
+void Camera::setPlayer(int i, int j) {
+  position = glm::vec3(i, -1, j);
+}

@@ -61,8 +61,3 @@ void Map::addMoai(int i, int j) {
   layout[i][j] = 'o';
   types.insert('o');
 }
-
-void Map::addPlayer(int i, int j) {
-  player_i = i;
-  player_j = j;
-}
