@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 
 class Map {
 
@@ -23,6 +24,7 @@ class Map {
     void addPlayer(int, int);
     std::set<char> getTypesOfMesh();
     std::vector<std::vector<char>> layout;
+    std::map<int, int> lodLevel;
 
     int player_i;
     int player_j;

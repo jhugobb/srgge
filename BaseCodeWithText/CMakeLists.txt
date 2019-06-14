@@ -6,8 +6,9 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall")
+
 
 execute_process(COMMAND ln -s ../shaders)
 execute_process(COMMAND ln -s ../fonts)
@@ -36,7 +37,7 @@ link_directories(${GLEW_LIBRARY_DIRS})
 link_directories(${SOIL_LIBRARY_DIRS})
 link_directories(${FREETYPE_LIBRARY_DIRS})
 
-add_executable(${appName} Text.h Text.cpp TexturedQuad.h TexturedQuad.cpp Texture.h Texture.cpp PLYReader.h PLYReader.cpp TriangleMesh.h TriangleMesh.cpp Camera.h Camera.cpp Scene.h Scene.cpp Shader.h Shader.cpp ShaderProgram.h ShaderProgram.cpp Application.h Application.cpp Map.h Map.cpp trimesh.h trimesh.cpp trimesh_types.h LOD.cpp LOD.h Octree.cpp Octree.h main.cpp)
+add_executable(${appName} Text.h Text.cpp TexturedQuad.h TexturedQuad.cpp Texture.h Texture.cpp PLYReader.h PLYReader.cpp TriangleMesh.h TriangleMesh.cpp Camera.h Camera.cpp Scene.h Scene.cpp Shader.h Shader.cpp ShaderProgram.h ShaderProgram.cpp Application.h Application.cpp Map.h Map.cpp LOD.cpp LOD.h Octree.cpp Octree.h TimeCriticalRendering.cpp TimeCriticalRendering.h main.cpp)
 
 target_link_libraries(${appName} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} ${SOIL_LIBRARIES} ${FREETYPE_LIBRARIES})
 

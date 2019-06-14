@@ -69,6 +69,7 @@ node* ins(Vertex v, node* root, glm::vec3 origin, double length_x, double length
     if (dir.x >= 0) {i++; new_origin.x += half_x;}
     if (dir.y >= 0) {i+=2; new_origin.y += half_y;}
     if (dir.z >= 0) {i+=4; new_origin.z += half_z;}
+    
     root->children[i] = ins(v, root->children[i], new_origin, half_x, half_y, half_z, dep+1, o);
     return root;
   }
@@ -157,15 +158,14 @@ void free_oct(node* root) {
   if (root == NULL) return;
   if (root->is_leaf) {
     root->verts.clear();
-    free(root);
-  } else {
-    for (node* child : root->children) {
-      free_oct(child);
-    }
-    free(root);
+  }
+  for (node* child : root->children) {
+    free_oct(child);
+    free(child);
   }
 }
 
 void Octree::free() {
   free_oct(root);
+  std::free(root);
 }

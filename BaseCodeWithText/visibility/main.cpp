@@ -63,10 +63,14 @@ void parse(Map* map, string filename) {
 	file.close();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
 
   Map* map = new Map();
-  parse(map, "../../maps/3.map");
+  if (argc < 3) {
+    cout << "Usage ./vis /path/to/map /path/to/vis" << endl;
+    return 0;
+  }
+  parse(map, string(argv[1]));
   
   default_random_engine gen;
   uniform_real_distribution<double> dist(0.0,1.0);
@@ -79,62 +83,61 @@ int main(int argc, char** argv) {
   double angle;
 
   Eigen::Vector2d v;
-  Eigen::Vector2d u;
-
   
   std::map<int, unordered_set<int>> PVSs;
   cout << "map size: " << map_size << endl;
   for (unsigned int i = 0; i < map_size; i++) {
     row_size = map->layout[i].size();
-    //cout << "row size: " << row_size << endl;
     cout << "i " << i << endl;
+    
     for (unsigned int j = 0; j < row_size; j++) {
       unordered_set<int> PVS;
-      PVS.emplace(i*row_size + j-1);
-      //cout << " j " << j << endl;
+      PVS.emplace(i*row_size + j);
+
       for (int k = 0; k < RAYS_PER_CELL; k++) {
         x = i + dist(gen) - 0.5;
         y = j + dist(gen) - 0.5;
         angle = dist(gen) * 2 * M_PI;
 
+        // Check direction of ray
         int step_x = (cos(angle) >= 0) ? 1 : -1;
         int step_y = (sin(angle) >= 0) ? 1 : -1;
 
+        // Calculate the closest component to the next grid border
         double near_x = (step_x >= 0) ? (i + 1) - x : x - i;	
         double near_y = (step_y >= 0) ? (j + 1) - y : y - j;
 
         v = Eigen::Vector2d(cos(angle),sin(angle));
-        //v.normalize();
 
-        double ray_step_to_vside = (v[0] != 0) ? near_x / v[0] : std::numeric_limits<double>::max();
-        double ray_step_to_hside = (v[1] != 0) ? near_y / v[1] : std::numeric_limits<double>::max();
+        double dist_v = (v[0] != 0) ? near_x / v[0] : numeric_limits<double>::max();
+        double dist_h = (v[1] != 0) ? near_y / v[1] : numeric_limits<double>::max();
 
-        double dx = (v[0] != 0) ? 1.0 / v[0] : std::numeric_limits<double>::max();
-        double dy = (v[1] != 0) ? 1.0 / v[1] : std::numeric_limits<double>::max();
+        double step_ray_x = (v[0] != 0) ? 1.0 / v[0] : numeric_limits<double>::max();
+        double step_ray_y = (v[1] != 0) ? 1.0 / v[1] : numeric_limits<double>::max();
 
-        if (std::abs(ray_step_to_vside) < std::abs(ray_step_to_hside)) {
-          ray_step_to_vside = ray_step_to_vside + dx;
+        // Update step because we already added the current cell
+        if (abs(dist_v) < abs(dist_h)) {
+          dist_v = dist_v + step_ray_x;
           x += step_x;
         } else {
-          ray_step_to_hside = ray_step_to_hside + dy;
+          dist_h = dist_h + step_ray_y;
           y += step_y;
         }
         while (x < map_size && x >= 0 && y < row_size && y >= 0) {
 
           unsigned int cell_pos_x = floor(x);
           unsigned int cell_pos_y = floor(y);
-          //cout << cell_pos_x << " " << cell_pos_y<< endl;
 
-          PVS.emplace(cell_pos_x * row_size + cell_pos_y-1);
+          PVS.emplace(cell_pos_x * row_size + cell_pos_y);
           if (map->layout[cell_pos_x][cell_pos_y] == 'w') {
             break;
           }
-
-          if (std::abs(ray_step_to_vside) < std::abs(ray_step_to_hside)) {
-            ray_step_to_vside = ray_step_to_vside + dx;
+          // Update step
+          if (abs(dist_v) < abs(dist_h)) {
+            dist_v = dist_v + step_ray_x;
             x += step_x;
           } else {
-            ray_step_to_hside = ray_step_to_hside + dy;
+            dist_h = dist_h + step_ray_y;
             y += step_y;
           }
         }
@@ -142,13 +145,13 @@ int main(int argc, char** argv) {
       PVSs[i*row_size + j] = PVS;
     }
   }
-
-  ofstream output("../results/3.vis", ios::out);
+  // Write to file
+  ofstream output(string(argv[2]), ios::out);
   if (output.is_open()) {
     for (unsigned int i = 0; i < PVSs.size(); i++) {
       unordered_set<int> PVS = PVSs[i];
-      for (int idx : PVS) {
-        output << idx;
+      for (int istep_ray_x : PVS) {
+        output << istep_ray_x;
         output << " ";
       } 
       output << endl;

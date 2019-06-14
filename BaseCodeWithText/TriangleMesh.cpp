@@ -8,6 +8,7 @@ using namespace std;
 
 TriangleMesh::TriangleMesh()
 {
+	is_mesh = false;
 }
 
 
@@ -75,63 +76,116 @@ void TriangleMesh::setLODlevel(int level) {
 	LOD_level = level;
 }
 
-void TriangleMesh::sendToOpenGL(ShaderProgram &program, bool is_mesh)
+void TriangleMesh::sendToOpenGL(ShaderProgram &program, bool is_m)
 {
-	if (&vbo != NULL) glDeleteBuffers(1, &vbo);
-	if (&vao != NULL) glDeleteVertexArrays(1, &vao);
-	if (is_mesh) {
-		vertices.clear();
-		triangles.clear();
-		vertices = (lod.simp_vertices)[LOD_level];
-		triangles = (lod.simp_tris)[LOD_level];
+	is_mesh = is_m;
+	if (is_m) {
+		for (int i = 0; i < 4; i++) {
+			vertices.clear();
+			triangles.clear();
+			vertices = lod.simp_vertices[i];
+			triangles = lod.simp_tris[i];
+
+			vector<float> data;
+
+			for(unsigned int tri=0; tri<triangles.size(); tri+=3)
+			{
+				glm::vec3 normal;
+				
+				normal = glm::cross(vertices[triangles[tri+1]] - vertices[triangles[tri]], 
+														vertices[triangles[tri+2]] - vertices[triangles[tri]]);
+				normal = glm::normalize(normal);
+				for(unsigned int vrtx=0; vrtx<3; vrtx++)
+				{
+					data.push_back(vertices[triangles[tri + vrtx]].x);
+					data.push_back(vertices[triangles[tri + vrtx]].y);
+					data.push_back(vertices[triangles[tri + vrtx]].z);
+
+					data.push_back(normal.x);
+					data.push_back(normal.y);
+					data.push_back(normal.z);
+				}
+			}
+
+			// Send data to OpenGL
+			glGenVertexArrays(1, &vao);
+			glBindVertexArray(vao);
+			glGenBuffers(1, &vbo);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+			posLocation = program.bindVertexAttribute("position", 3, 6*sizeof(float), 0);
+			normalLocation = program.bindVertexAttribute("normal", 3, 6*sizeof(float), (void *)(3*sizeof(float)));
+			vaos.push_back(vao);
+			vbos.push_back(vbo);
+			posLocations.push_back(posLocation);
+			normalLocations.push_back(normalLocation);
+		}
+	} else {
+		vector<float> data;
+
+		for(unsigned int tri=0; tri<triangles.size(); tri+=3)
+		{
+			glm::vec3 normal;
+			
+			normal = glm::cross(vertices[triangles[tri+1]] - vertices[triangles[tri]], 
+													vertices[triangles[tri+2]] - vertices[triangles[tri]]);
+			normal = glm::normalize(normal);
+			for(unsigned int vrtx=0; vrtx<3; vrtx++)
+			{
+				data.push_back(vertices[triangles[tri + vrtx]].x);
+				data.push_back(vertices[triangles[tri + vrtx]].y);
+				data.push_back(vertices[triangles[tri + vrtx]].z);
+
+				data.push_back(normal.x);
+				data.push_back(normal.y);
+				data.push_back(normal.z);
+			}
+		}
+
+		// Send data to OpenGL
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+		posLocation = program.bindVertexAttribute("position", 3, 6*sizeof(float), 0);
+		normalLocation = program.bindVertexAttribute("normal", 3, 6*sizeof(float), (void *)(3*sizeof(float)));
+
+		// vertices.clear();
+		// triangles.clear();
 	}
-	vector<float> data;
-
-	for(unsigned int tri=0; tri<triangles.size(); tri+=3)
-	{
-	  glm::vec3 normal;
-	  
-	  normal = glm::cross(vertices[triangles[tri+1]] - vertices[triangles[tri]], 
-	                      vertices[triangles[tri+2]] - vertices[triangles[tri]]);
-    normal = glm::normalize(normal);
-    for(unsigned int vrtx=0; vrtx<3; vrtx++)
-    {
-      data.push_back(vertices[triangles[tri + vrtx]].x);
-      data.push_back(vertices[triangles[tri + vrtx]].y);
-      data.push_back(vertices[triangles[tri + vrtx]].z);
-
-      data.push_back(normal.x);
-      data.push_back(normal.y);
-      data.push_back(normal.z);
-    }
-	}
-
-  // Send data to OpenGL
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-	posLocation = program.bindVertexAttribute("position", 3, 6*sizeof(float), 0);
-	normalLocation = program.bindVertexAttribute("normal", 3, 6*sizeof(float), (void *)(3*sizeof(float)));
-
-	// vertices.clear();
-	// triangles.clear();
+		
+	
 }
 
 void TriangleMesh::render() const
 {
-	glBindVertexArray(vao);
-	glEnableVertexAttribArray(posLocation);
-	glEnableVertexAttribArray(normalLocation);
-	glDrawArrays(GL_TRIANGLES, 0, 3 * 2 * 3 * triangles.size() / 3);
+	if (is_mesh) {
+		glBindVertexArray(vaos[LOD_level]);
+		glEnableVertexAttribArray(posLocations[LOD_level]);
+		glEnableVertexAttribArray(normalLocations[LOD_level]);
+		glDrawArrays(GL_TRIANGLES, 0, 3 * 2 * 3 * (lod.simp_tris)[LOD_level].size() / 3);
+	} else {
+		glBindVertexArray(vao);
+		glEnableVertexAttribArray(posLocation);
+		glEnableVertexAttribArray(normalLocation);
+		glDrawArrays(GL_TRIANGLES, 0, 3 * 2 * 3 * triangles.size() / 3);
+	}
+	
 }
 
 void TriangleMesh::free()
 {
 	glDeleteBuffers(1, &vbo);
 	glDeleteVertexArrays(1, &vao);
-	
+	if (is_mesh) {
+		for (vector<glm::vec3> vs : lod.simp_vertices) {
+			vs.clear();
+		}
+		for (vector<int> ts : lod.simp_tris) {
+			ts.clear();
+		}
+	}
 	vertices.clear();
 	triangles.clear();
 }

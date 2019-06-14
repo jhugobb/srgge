@@ -3,13 +3,12 @@
 #include "Application.h"
 
 
-void Application::init()
+void Application::init(int argc, char** argv)
 {
-	bPlay = true;
 	glClearColor(1.f, 1.f, 1.f, 1.0f);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	scene.init();
+	bPlay = scene.init(argc, argv);
 	
 	for(unsigned int i=0; i<256; i++)
 	{
@@ -28,7 +27,7 @@ bool Application::loadMesh(const char *filename)
 
 bool Application::update(int deltaTime)
 {
-	scene.update(deltaTime, keys[119], keys[115], keys[97], keys[100]);
+	scene.update(deltaTime, keys[119], keys[115], keys[97], keys[100], bPlay);
 	
 	return bPlay;
 }
@@ -36,7 +35,8 @@ bool Application::update(int deltaTime)
 void Application::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	scene.render();
+	if (bPlay)
+		scene.render();
 }
 
 void Application::resize(int width, int height)
@@ -49,6 +49,8 @@ void Application::keyPressed(int key)
 {
 	if(key == 27) // Escape code
 		bPlay = false;
+	if(key == 118)
+		scene.toggleVisMode();
 	keys[key] = true;
 }
 
@@ -108,5 +110,7 @@ void Application::cleanUpScene() {
 	scene.cleanup();
 }
 
-
+void Application::setDelta(double delta) {
+	scene.setDelta(delta);
+}
 

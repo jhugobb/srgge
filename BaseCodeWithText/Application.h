@@ -22,10 +22,11 @@ public:
 		return G;
 	}
 	
-	void init();
+	void init(int, char**);
 	bool loadMesh(const char *filename);
 	bool update(int deltaTime);
 	void cleanUpScene();
+	void setDelta(double);
 	void render();
 	
 	void resize(int width, int height);

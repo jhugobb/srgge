@@ -2,6 +2,8 @@
 #include <GL/glut.h>
 #include "Application.h"
 
+#include <ctime>
+#include <iostream>
 
 //Remove console (only works in Visual Studio)
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
@@ -83,8 +85,11 @@ static void resizeCallback(int width, int height)
 
 static void drawCallback()
 {
+	double begin = clock();
 	Application::instance().render();
 	glutSwapBuffers();
+	double end = clock();
+	Application::instance().setDelta((end-begin)/CLOCKS_PER_SEC);
 }
 
 static void idleCallback()
@@ -129,7 +134,7 @@ int main(int argc, char **argv)
 	glewInit();
 	
 	// Application instance initialization
-	Application::instance().init();
+	Application::instance().init(argc, argv);
 	if(argc > 1)
 	  Application::instance().loadMesh(argv[1]);
 	prevTime = glutGet(GLUT_ELAPSED_TIME);

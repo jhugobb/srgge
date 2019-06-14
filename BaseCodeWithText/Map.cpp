@@ -38,8 +38,8 @@ void Map::addDragon(int i, int j) {
 }
 
 void Map::addFrog(int i, int j) {
-  layout[i][j] = 'r';
-  types.insert('r');
+  layout[i][j] = 'f';
+  types.insert('f');
 }
 
 void Map::addMax(int i, int j) {

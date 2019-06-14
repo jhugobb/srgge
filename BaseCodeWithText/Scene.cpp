@@ -1,16 +1,22 @@
-#include <iostream>
 #include <cmath>
-#define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include <ctime>
+#include <iostream>
+
 #include "Scene.h"
 #include "PLYReader.h"
 #include "LOD.h"
 
+#define GLM_FORCE_RADIANS
+
 Scene::Scene()
 {
 	map = new Map();
+	tcr = TCR();
+	delta = 0;
+	framerate = 0;
 }
 
 Scene::~Scene()
@@ -20,7 +26,7 @@ Scene::~Scene()
 
 std::vector<std::string> split(const std::string & str, const std::string & delim) {
     std::vector<std::string> tokens;
-    int prev = 0, pos = 0;
+    unsigned int prev = 0, pos = 0;
     do {
         pos = str.find(delim, prev);
         if (pos == std::string::npos) pos = str.length();
@@ -31,10 +37,13 @@ std::vector<std::string> split(const std::string & str, const std::string & deli
     return tokens;
 }
 
-void Scene::parseVisibility(string filename) {
+bool Scene::parseVisibility(string filename) {
 	std::ifstream file(filename, ios::in);
+	if (!file.is_open()) {
+		cout << "Visibility file not found" << endl;
+		return false;
+	}
   std::string line; 
-  unsigned int size;
   unsigned int i = 0;
   while (std::getline(file, line)) {
 		std::vector<std::string> vals = split(line, " ");
@@ -45,17 +54,22 @@ void Scene::parseVisibility(string filename) {
 		PVSs[i] = PVS;
 		i++;
 	}
+	return true;
 }
 
-void parse(Map* map, string filename) {
+bool Scene::parse(string filename) {
   std::ifstream file(filename, ios::in);
+	if (!file.is_open()) {
+		cout << "Map file not found" << endl;
+		return false;
+	}
   std::string line; 
   unsigned int size;
   unsigned int i = 0;
   while (std::getline(file, line)) {
     size = line.size(); 
     map->addRow(size);
-    for (int j= 0; j< size; j++) {
+    for (unsigned int j= 0; j< size; j++) {
       switch (line[j]) {
         case 'w':
           map->addWall(i,j);
@@ -81,7 +95,7 @@ void parse(Map* map, string filename) {
 				case 'l':
 					map->addLucy(i,j);
 					break;
-				case 'r':
+				case 'f':
 					map->addFrog(i,j);
 					break;
 				case 'd':
@@ -96,13 +110,34 @@ void parse(Map* map, string filename) {
     i++;
   }
 	file.close();
+	return true;
 }
 
-void Scene::init()
+bool Scene::init(int argc, char* argv[])
 {
 	initShaders();
-	parse(map, "../maps/3.map");
-	parseVisibility("../visibility/results/3.vis");
+
+	vector<string> args;
+	for (int i = 0; i < argc; i++) {
+		args.push_back(string(argv[i]));
+	}
+
+	if (args.size() != 3) {
+		cout << "Usage: ./BaseCode file.map file.vis" << endl;
+		cout << "Now parsing ../maps/3.map and ../visibility/results/3.vis" << endl;
+		if (!parse( "../maps/3.map")) {
+			return false;
+		}
+		if (!parseVisibility("../visibility/results/3.vis")) {
+			return false;
+		}
+	} else {
+		if (!parse(args[1])) return false;
+		if (!parseVisibility(args[2])) return false;
+	}
+	// Parse the map
+	// Parse the visibility
+
 	vector<char> possibilities = {'a', 'b', 'd', 'f', 'h', 'l',
 																'w', 'm', 'o', 'r'};
 	std::map<char, bool> is_comp;
@@ -111,6 +146,7 @@ void Scene::init()
 	bool is_mesh;
 	std::string mesh_location;
 	
+	// Build mesh instances
 	for (char c : map->getTypesOfMesh()) {
 		TriangleMesh* mesh = new TriangleMesh();
 		bool success;
@@ -146,7 +182,7 @@ void Scene::init()
 				mesh_location = "../models/lucy.ply";
 				is_mesh = true;
 				break;
-			case 'r':
+			case 'f':
 				mesh_location = "../models/frog.ply";
 				is_mesh = true;
 				break;
@@ -170,12 +206,13 @@ void Scene::init()
 				break;
 		}
 		if (is_mesh) {
+			cout << "Reading " << mesh_location << " file." << endl;
 			success = reader.readMesh(mesh_location, *mesh);
 			if (!success) continue;
 			lod = LOD(mesh);
 			assert(lod.simp_vertices.size() != 0);
 			mesh->setLOD(lod);
-			mesh->setLODlevel(1);
+			mesh->setLODlevel(0);
 			mesh->sendToOpenGL(basicProgram, is_mesh);
 			meshes.insert(std::pair<char,TriangleMesh*>(c,mesh));
 			is_comp[c] = true;
@@ -184,39 +221,38 @@ void Scene::init()
 	currentTime = 0.0f;
 	
 	camera.init(2.0f);
+	// Set player position
 	camera.setPlayer(-map->player_i, -map->player_j);
 	
 	bPolygonFill = true;
+	vis_mode = false;
 	
 	// Select which font you want to use
 	if(!text.init("fonts/OpenSans-Regular.ttf"))
 	//if(!text.init("fonts/OpenSans-Bold.ttf"))
 	//if(!text.init("fonts/DroidSerif.ttf"))
 		cout << "Could not load font!!!" << endl;
+	return true;
 }
 
 bool Scene::loadMesh(const char *filename)
 {
-	PLYReader reader;
-
-	//mesh->free();
-	//bool bSuccess = reader.readMesh(filename, *mesh);
-	//if(bSuccess)
-	  //mesh->sendToOpenGL(basicProgram);
-	
-	//return bSuccess;
 	return false;
 }
 
-void Scene::update(int deltaTime, bool forward, bool back, bool left, bool right) 
+void Scene::update(int deltaTime, bool forward, bool back, bool left, bool right, bool bPlay) 
 {
+	if (!bPlay) return;
 	currentTime += deltaTime;
 	framerate = 1.0f/deltaTime * 1000;
 	
 	glm::mat4 m;
 	m = camera.getModelViewMatrix();
 	glm::vec3 mov(0);
-	glm::vec3 forw = glm::normalize(glm::vec3(m[0][2], 0, m[2][2]));
+	// Get forward vector of camera
+	glm::vec3 forw;
+	if (!vis_mode) forw = glm::normalize(glm::vec3(m[0][2], 0, m[2][2]));
+	else forw = glm::normalize(glm::vec3(m[0][2], m[1][2], m[2][2]));
 	glm::vec3 side = glm::normalize(glm::cross(forw, glm::vec3(0,1,0)));
 	float rate = float(1.0f/deltaTime);
 	if (forward){
@@ -247,64 +283,75 @@ void Scene::render()
 	int player_i = -floor(player_pos[0]);
 	int player_j = -floor(player_pos[2]);
 	basicProgram.setUniform1i("bLighting", bPolygonFill?1:0);
-	if(bPolygonFill)
-	{
-  	basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  }
-  else
-  {
-  	basicProgram.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
-		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0.5f, 1.0f);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		int size = map->layout.size();
-		for (int i = 0; i<size; i++) {
+	int size_col = map->layout[0].size();
+	int s_row = map->layout.size();
+	tcr.getBestLODs(map, meshes, framerate, delta, PVSs[player_i*size_col + player_j], player_pos);
+
+	basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	
+	// Iterate over the visible map cells from the player POV
+	if (!vis_mode) {
+		for (int i : PVSs[player_i*size_col + player_j]) {
+			int row = i / size_col;
+			int col = i % size_col;
+			
+			// Change color depending on the object
+			if (map->layout[row][col] == ' ') basicProgram.setUniform4f("color", 0.40, 0.27, 0.00, 1);
+			else if (map->layout[row][col] == 'w') basicProgram.setUniform4f("color", 0.68, 0.68, 0.68, 1);
+			else basicProgram.setUniform4f("color", 0.9f, 0.9f, 0.95f, 1.0f);
+			
+			// Translate instance to position
+			glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(row, 0, col));
+			glm::mat4 mat = MV * matrix;
+			basicProgram.setUniformMatrix4f("modelview", mat);
+			
+			TriangleMesh* m = meshes[map->layout[row][col]];
+
+			// Render a mesh from a different color depending on its LOD
+			if (map->layout[row][col] != ' ' && map->layout[row][col] != 'w') {
+				m->setLODlevel(map->lodLevel[row*size_col+col]);
+				if (m->LOD_level == 0) basicProgram.setUniform4f("color", 1, 0, 0, 1.0);
+				else if (m->LOD_level == 1) basicProgram.setUniform4f("color", 0, 1, 0, 1.0);
+				else if (m->LOD_level == 2) basicProgram.setUniform4f("color", 0, 0, 1, 1.0);
+				else basicProgram.setUniform4f("color", 0.9, 0.9, 0.9, 1.0);
+			}
+			m->render();
+			// Draw a floor if the object was a mesh
+			if (map->layout[row][col] != ' ' && map->layout[row][col] != 'w') {
+					TriangleMesh * floor = meshes[' '];
+					basicProgram.setUniform4f("color", 0, 0.27, 0.4, 1.0);
+					floor->render();
+			}
+		}
+	} else {
+		for (int i = 0; i<s_row; i++) {
 			int s = map->layout[i].size();
 			for (int j = 0; j<s; j++) {
 				TriangleMesh* m = meshes[map->layout[i][j]];
-				if (PVSs[player_i*s + player_j].find(i*s + j-1) == PVSs[player_i*s + player_j].end()) continue;
+				if (PVSs[player_i*s + player_j].find(i*s + j) == PVSs[player_i*s + player_j].end()) {
+					basicProgram.setUniform4f("color", 0, 1, 0, 1);
+				} else basicProgram.setUniform4f("color", 1, 0, 0, 1);
+
 				if(m) {
-					if (map->layout[i][j] == ' ') basicProgram.setUniform1i("is_floor", 1);
-					else basicProgram.setUniform1i("is_floor", 0);
+					m->setLODlevel(0);
 					glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
-					glm::mat4 mat = MV* matrix;
+					glm::mat4 mat = MV * matrix;
 					basicProgram.setUniformMatrix4f("modelview", mat);
 					m->render();
 				}
 				if (map->layout[i][j] != ' ' && map->layout[i][j] != 'w') {
-					TriangleMesh * floor = meshes[' '];
-					basicProgram.setUniform1i("is_floor", 1);
-					floor->render();
+						TriangleMesh * floor = meshes[' '];
+						floor->render();
 				}
 			}
 		}
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDisable(GL_POLYGON_OFFSET_FILL);
-  	basicProgram.setUniform4f("color", 0.0f, 0.0f, 0.0f, 1.0f);
-  }
-	int size = map->layout.size();
-	for (int i = 0; i<size; i++) {
-		int s = map->layout[i].size();
-		for (int j = 0; j<s; j++) {
-			TriangleMesh* m = meshes[map->layout[i][j]];
-			if (PVSs[player_i*s + player_j].find(i*s + j-1) == PVSs[player_i*s + player_j].end()) continue;
-			if(m) {
-				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glm::vec3(i, 0, j));
-				glm::mat4 mat = MV * matrix;
-				basicProgram.setUniformMatrix4f("modelview", mat);
-				m->render();
-			}
-			if (map->layout[i][j] != ' ' && map->layout[i][j] != 'w') {
-					TriangleMesh * floor = meshes[' '];
-					floor->render();
-			}
-			if (PVSs[player_i*s + player_j].find(i*s + j-1) != PVSs[player_i*s + player_j].end()){
-				basicProgram.setUniform1i("visible", 1);
-			} else basicProgram.setUniform1i("visible", 0);
-		}
 	}
+
 	text.render(std::to_string(framerate), glm::vec2(20, 20), 16, glm::vec4(0, 0, 0, 1));
+	
+	//cout << "Time render map: " << (end-begin) / CLOCKS_PER_SEC << endl;
 }
 
 Camera &Scene::getCamera()
@@ -348,13 +395,14 @@ void Scene::initShaders()
 }
 
 void Scene::cleanup() {
-	int size = map->layout.size();
-	for (int i = 0; i<size; i++) {
-		int s = map->layout[i].size();
-		for (int j = 0; j<s; j++) {
-			TriangleMesh* m = meshes[map->layout[i][j]];
-			if(m)
-				m->free();
-		}
-	}
+	for (auto el : meshes) 
+		free(el.second);
+}
+
+void Scene::setDelta(double del) {
+	delta = del;
+}
+
+void Scene::toggleVisMode() {
+	vis_mode = !vis_mode;
 }

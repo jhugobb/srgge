@@ -20,10 +20,11 @@ void main()
     float diffuse = max(0.0, dot(normalize(normalFrag), lightDirection));
     lighting = 0.15f * ambient + 0.85f * diffuse;
   }
-  vec4 c;
-  if (is_floor == 1) c = vec4(0.5, 0.2, 0.4, 1);
-  else c = color;
+  //vec4 c;
+  //if (is_floor == 1) c = vec4(0.5, 0.2, 0.4, 1);
+  //else c = color;
+
   // Modulate color with lighting and apply gamma correction
-	outColor = pow(lighting * c, vec4(1.0 / 2.1));
+	outColor = pow(lighting * color, vec4(1.0 / 2.1));
 }
 

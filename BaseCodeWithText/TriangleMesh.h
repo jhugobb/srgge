@@ -29,15 +29,20 @@ public:
 	void sendToOpenGL(ShaderProgram &program, bool is_mesh);
 	void render() const;
 	void free();
+	LOD lod;
+	int LOD_level;
 
 private:
   vector<glm::vec3> vertices;
   vector<int> triangles;
-	LOD lod;
-	int LOD_level;
+	vector<GLuint> vaos;
+	vector<GLuint> vbos;
+	vector<GLint> posLocations;
+	vector<GLint> normalLocations;
 	GLuint vao;
 	GLuint vbo;
 	GLint posLocation, normalLocation;
+	bool is_mesh;
 	
 };
 

@@ -17,5 +17,6 @@ class LOD {
     LOD(TriangleMesh*);
     vector<vector<glm::vec3>> simp_vertices;
     vector<vector<int>> simp_tris;
+    double diagonal_bbox;
 };
 #endif
